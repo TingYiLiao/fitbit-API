@@ -1,0 +1,94 @@
+<html><body>
+<?php
+// A simple web site in Cloud9 that runs through Apache
+// Press the 'Run' button on the top to start the web server,
+// then click the URL that is emitted to the Output tab of the console
+
+class FitbitConnection{
+
+    public function getToken($request_url, $client_id, $client_secret, $code, $redirect_uri){
+
+        // base64 encode the client_id and client_secret
+        $auth = base64_encode("{$client_id}:{$client_secret}");
+        // urlencode the redirect_url
+        $redirect_uri = urlencode($redirect_uri);
+        $request_url .= "?client_id={$client_id}&grant_type=authorization_code&redirect_uri={$redirect_uri}&code={$code}";
+
+        // Set the headers
+        $headers = [
+                        "Authorization: Basic {$auth}",
+                        "Content-Type: application/x-www-form-urlencoded",
+                    ];
+
+            // Initiate curl session
+            $ch = curl_init();
+            // Set headers
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            // Options (see: http://php.net/manual/en/function.curl-setopt.php)
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            //curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_VERBOSE, 1);
+            curl_setopt($ch, CURLOPT_HEADER, 1);
+            curl_setopt($ch, CURLOPT_URL, $request_url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            // Execute the curl request and get the response
+            $response = curl_exec($ch);
+
+            // Throw an exception if there was an error with curl
+            if($response === false){
+                throw new Exception(curl_error($ch), curl_errno($ch));
+            }
+
+            // Get the body of the response
+            $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+            $responseBody = substr($response, $header_size);
+            // Close curl session
+            curl_close($ch);
+
+            // Return response body
+            return $responseBody;
+
+    }
+    //getToken("https://api.fitbit.com/oauth2/token","229X5X","d90d282f41698ab2f88a9bd0f82fb5d1","https://ssrc.nccu.edu.tw");
+}
+
+
+$fitbitConnection = new FitbitConnection();
+    $token_response = $fitbitConnection->getToken("https://api.fitbit.com/oauth2/token","229X5X","d90d282f41698ab2f88a9bd0f82fb5d1",$_GET['code'],"https://fitbit-test-e636122.c9users.io");
+    $yummy = json_decode($token_response,true);
+    
+    // echo $yummy['access_token'];
+  // echo $token_response;
+    $temp = "Authorization: Bearer ".(string)$yummy['access_token'];
+//echo $temp;
+// $opts = array(
+//   'http'=>array(
+//     'method'=>"GET",
+//     'header'=>$temp
+// )
+// );
+$headers = array();
+$headers[] = $temp ;
+//$context = stream_context_create($opts);
+
+// Open the file using the HTTP headers set above
+//$file = file_get_contents('https://api.fitbit.com/1/user/3X2R3P/activities/date/2016-04-08.json', false, $context);
+//echo $file ;
+                        $ch = curl_init();
+                        curl_setopt($ch, CURLOPT_URL, 'https://api.fitbit.com/1/user/3X2R3P/activities/date/2016-04-08.json');
+                        //curl_setopt($ch, CURLOPT_HEADER, 1);
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                        $html = curl_exec($ch);
+                        //echo $html['summary'];
+                         // var_dump(curl_error($ch));
+                        curl_close($ch);
+//                         echo 111;
+//                         curl_error($ch);
+//$output = json_decode($html,true);
+$output =  json_decode($html,true);
+
+echo $output['summary']['caloriesBMR'];
+?>
+</body>
+</html>
